@@ -1,0 +1,13 @@
+gamestate enum levels
+scene class
+within level speed, winstate and spawnrate should be decided
+more bad spawns in later levels
+show level
+keep track of levels
+make the canvas standard width
+
+game logic and randomspawn should be in scene class
+custom background
+win state within levels
+
+class level de game logica/maken van een level

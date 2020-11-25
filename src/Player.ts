@@ -20,7 +20,7 @@ class Player {
 
         this.keyListener = new KeyListener();
 
-        this.image = this.loadNewImage("./assets/img/players/character_robot_walk0.png");
+        this.image = this.loadNewImage("./assets/img/players/character_femaleAdventurer_walk0.png");
         this.positionX = this.canvas.width / 2;
     }
 
@@ -46,14 +46,14 @@ class Player {
     }
 
     /**
-     * Collision detection of gold trophy and player
+     * Collision detection of scoringObject and player
      * Use bounding box detection method: https://computersciencewiki.org/index.php/Bounding_boxes
      */
-    public collidesWithGoldTrophy(goldTrophy: GoldTrophy): boolean {
-        if (this.positionX < goldTrophy.getPositionX() + goldTrophy.getImageWidth()
-            && this.positionX + this.image.width > goldTrophy.getPositionX()
-            && this.canvas.height - 150 < goldTrophy.getPositionY() + goldTrophy.getImageHeight()
-            && this.canvas.height - 150 + this.image.height > goldTrophy.getPositionY()
+    public collidesWith(scoringObject: ScoringObject): boolean {
+        if (this.positionX < scoringObject.getPositionX() + scoringObject.getImageWidth()
+            && this.positionX + this.image.width > scoringObject.getPositionX()
+            && this.canvas.height - 150 < scoringObject.getPositionY() + scoringObject.getImageHeight()
+            && this.canvas.height - 150 + this.image.height > scoringObject.getPositionY()
         ) {
             return true;
         }
@@ -61,53 +61,7 @@ class Player {
         return false;
     }
 
-    /**
-     * Collision detection of silver trophy and player
-     * Use bounding box detection method: https://computersciencewiki.org/index.php/Bounding_boxes
-     */
-    public collidesWithSilverTrophy(silverTrophy: SilverTrophy): boolean {
-        if (this.positionX < silverTrophy.getPositionX() + silverTrophy.getImageWidth()
-            && this.positionX + this.image.width > silverTrophy.getPositionX()
-            && this.canvas.height - 150 < silverTrophy.getPositionY() + silverTrophy.getImageHeight()
-            && this.canvas.height - 150 + this.image.height > silverTrophy.getPositionY()
-        ) {
-            return true;
-        }
 
-        return false;
-    }
-
-    /**
-     * Collision detection of red cross and player
-     * Use bounding box detection method: https://computersciencewiki.org/index.php/Bounding_boxes
-     */
-    public collidesWithRedCross(redCross: RedCross): boolean {
-        if (this.positionX < redCross.getPositionX() + redCross.getImageWidth()
-            && this.positionX + this.image.width > redCross.getPositionX()
-            && this.canvas.height - 150 < redCross.getPositionY() + redCross.getImageHeight()
-            && this.canvas.height - 150 + this.image.height > redCross.getPositionY()
-        ) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Collision detection of lightning bolt and player
-     * Use bounding box detection method: https://computersciencewiki.org/index.php/Bounding_boxes
-     */
-    public collidesWithLightningBolt(lightningBolt: LightningBolt): boolean {
-        if (this.positionX < lightningBolt.getPositionX() + lightningBolt.getImageWidth()
-            && this.positionX + this.image.width > lightningBolt.getPositionX()
-            && this.canvas.height - 150 < lightningBolt.getPositionY() + lightningBolt.getImageHeight()
-            && this.canvas.height - 150 + this.image.height > lightningBolt.getPositionY()
-        ) {
-            return true;
-        }
-
-        return false;
-    }
 
     /**
     * Loads an image in such a way that the screen doesn't constantly flicker
