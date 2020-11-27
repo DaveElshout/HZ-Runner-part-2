@@ -1,4 +1,5 @@
 class Game {
+    
 
     // The canvas
     private canvas: HTMLCanvasElement;
@@ -6,24 +7,22 @@ class Game {
     // The player on the canvas
     private player: Player;
 
-    // The objects on the canvas
-    private scoringObject: Array<ScoringObject> = new Array()
+    
 
+    private level: Level;
     // KeyListener so the user can give input
     private keyListener: KeyListener;
 
     // Score
-    private totalScore: number;
-    private totalLives: number;
-    private speedBoost: number;
-    private won: boolean = false;
-
+    
     // amount of frames
     private frameIndex: number;
 
 
     //paused or not
     private paused: boolean;
+    //9 is last level
+    private levelIndex: number = 0;
 
     public constructor(canvas: HTMLElement) {
         this.canvas = <HTMLCanvasElement>canvas;
@@ -35,12 +34,9 @@ class Game {
         // Set the player at the center
         this.player = new Player(this.canvas);
 
-        // Score is zero at start
-        this.totalScore = 0;
-        this.totalLives = 5;
+        this.advanceToNextLevel();
 
-        //upps the speed
-        this.speedBoost = 0;
+        
 
         this.frameIndex = 0;
 
@@ -64,59 +60,23 @@ class Game {
         this.pause();
 
         //only executes the game when the game is not paused
-        if (this.paused === false && this.totalLives > 0 && this.won === false) {
+        if (this.paused === false && this.level.getTotalLives() > 0 && this.level.isComplete() === false) {
+            this.level.logic(this.frameIndex);
+            this.frameIndex = this.level.getFrameIndex();
             this.frameIndex++
-            if (this.totalScore >= 1000) {
-                this.won = true
-            }
-            //makes you lose if you have minus points
-            if (this.totalScore < 0){
-                this.totalLives = 0;
-            }
-
-            //spawns an item every x frames & decides the speed boost and frequency of items
-            if (this.frameIndex === 40 && this.totalScore >= 700) {
-                this.createRandomScoringObject();
-                this.frameIndex = 0;
-                this.speedBoost = 4;
-            }
-            if (this.frameIndex === 60 && this.totalScore >= 300) {
-                this.createRandomScoringObject();
-                this.frameIndex = 0;
-                this.speedBoost = 3;
-            }
-            if (this.frameIndex === 80 && this.totalScore >= 100) {
-                this.createRandomScoringObject();
-                this.frameIndex = 0;
-                this.speedBoost = 2
-            }
-            if (this.frameIndex === 100) {
-                this.createRandomScoringObject();
-                this.frameIndex = 0;
-            }
+            
             this.player.move();
+            //console.log(this.frameIndex);
+            
 
 
             // checks if player collides
-            this.scoringObject.forEach(
-                (object, index) => {
-                    if (object !== null) {
-                        object.move();
-
-                        if (this.player.collidesWith(object)) {
-                            this.totalScore += object.getPoints();
-                            this.totalLives += object.getLives();
-                            this.scoringObject.splice(index, 1)
-                        } else if (object.collidesWithCanvasBottom()) {
-                            this.scoringObject.splice(index, 1)
-                        }
-                    }
-                }
-            );
-        } if (this.totalLives <= 0) {
-            //clears screen on death
-            this.scoringObject = [];
-        }
+            this.level.collision();
+            
+            if (this.level.isComplete()){
+                this.advanceToNextLevel();
+            }
+        } 
 
         this.draw();
 
@@ -124,6 +84,22 @@ class Game {
         // The user must hit F5 to reload the game
         requestAnimationFrame(this.step);
     }
+
+    private advanceToNextLevel() {
+        const levelArray: Level[] = [
+            new Level(this.canvas, this.player, 90, 400, 0),
+            new Level(this.canvas, this.player, 80, 400,0.5),
+            new Level(this.canvas, this.player, 75, 600, 1),
+            new Level(this.canvas, this.player, 70, 800, 1.5),
+            new Level(this.canvas, this.player, 65, 1000, 2),
+            new Level(this.canvas, this.player, 60, 1200, 2.5),
+            new Level(this.canvas, this.player, 55, 1400, 3),
+            new Level(this.canvas, this.player, 50, 1600, 3.5)]
+        this.level = levelArray[this.levelIndex];
+        this.levelIndex ++
+    }
+
+    
 
     /**
      * pauses the game on button press and start back up 1000 ms after pressing start
@@ -144,19 +120,20 @@ class Game {
     private draw() {
         // Get the canvas rendering context
         const ctx = this.canvas.getContext('2d');
-        // Clear the entire canvas
+        // Clear the entire canvas 
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+        this.writeTextToCanvas(ctx,` Level: ${this.levelIndex}`, this.canvas.width / 2,  20, 18);
         this.writeTextToCanvas(ctx, "UP arrow = middle | LEFT arrow = left | RIGHT arrow = right", this.canvas.width / 2, 40, 14);
         this.writeTextToCanvas(ctx, `Press ESC to pause`, this.canvas.width / 2 - 250, 20, 16);
-        this.writeTextToCanvas(ctx, `Lives: ${this.totalLives}`, this.canvas.width / 2 + 250, 20, 16);
+        this.writeTextToCanvas(ctx, `Lives: ${this.level.getTotalLives()}`, this.canvas.width / 2 + 250, 20, 16);
 
         //writes you won when you win
-        if (this.won === true) {
+        if (this.level.isComplete()  === true) {
             this.writeTextToCanvas(ctx, `You Won!`, this.canvas.width / 2, 200, 40);
         }
         //writes you lost when you lost
-        if (this.totalLives <= 0) {
+        if (this.level.getTotalLives() <= 0) {
             this.writeTextToCanvas(ctx, `You Lost`, this.canvas.width / 2, 200, 40);
         }
         //writes the pause message when game is paused
@@ -170,53 +147,23 @@ class Game {
         this.player.draw(ctx);
 
         //draws each object
-        this.scoringObject.forEach(
-            (object) => {
-                if (object !== null) {
-                    object.draw(ctx);
-                }
-            });
+        this.level.drawObjects(ctx);
     }
+
+    
 
     /**
      * Draw the score on a canvas
      * @param ctx
      */
     private drawScore(ctx: CanvasRenderingContext2D): void {
-        this.writeTextToCanvas(ctx, `Score: ${this.totalScore}`, this.canvas.width / 2, 80, 16);
+        this.writeTextToCanvas(ctx, `Score: ${this.level.getTotalScore()}`, this.canvas.width / 2, 80, 16);
     }
 
     /**
      * Create a random scoring object and clear the other scoring objects by setting them to `null`.
      */
-    private createRandomScoringObject(): void {
-
-        const random = this.randomInteger(1, 4);
-        const plusLife = this.randomInteger(1, 40)
-
-
-        if (plusLife === 6) {
-            this.scoringObject.push(new GreenCross(this.canvas));
-        } else if (random === 1) {
-            this.scoringObject.push(new GoldTrophy(this.canvas));
-        }
-
-        else if (random === 2) {
-            this.scoringObject.push(new SilverTrophy(this.canvas));
-        }
-
-        else if (random === 3) {
-            this.scoringObject.push(new RedCross(this.canvas));
-        }
-
-        else if (random === 4) {
-            this.scoringObject.push(new LightningBolt(this.canvas));
-        }
-
-        const last_element: number = this.scoringObject.length - 1;
-        this.scoringObject[last_element].setSpeed(this.speedBoost);
-    }
-
+    
     /**
    * Writes text to the canvas
    * @param {string} text - Text to write
@@ -252,13 +199,5 @@ class Game {
 
 
 
-    /**
-    * Generates a random integer number between min and max
-    *
-    * @param {number} min - minimal time
-    * @param {number} max - maximal time
-    */
-    private randomInteger(min: number, max: number): number {
-        return Math.round(Math.random() * (max - min) + min);
-    }
+    
 }

@@ -9,54 +9,18 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 class Game {
     constructor(canvas) {
-        this.scoringObject = new Array();
-        this.won = false;
+        this.levelIndex = 0;
         this.step = () => {
             this.pause();
-            if (this.paused === false && this.totalLives > 0 && this.won === false) {
+            if (this.paused === false && this.level.getTotalLives() > 0 && this.level.isComplete() === false) {
+                this.level.logic(this.frameIndex);
+                this.frameIndex = this.level.getFrameIndex();
                 this.frameIndex++;
-                if (this.totalScore >= 1000) {
-                    this.won = true;
-                }
-                if (this.totalScore < 0) {
-                    this.totalLives = 0;
-                }
-                if (this.frameIndex === 40 && this.totalScore >= 700) {
-                    this.createRandomScoringObject();
-                    this.frameIndex = 0;
-                    this.speedBoost = 4;
-                }
-                if (this.frameIndex === 60 && this.totalScore >= 300) {
-                    this.createRandomScoringObject();
-                    this.frameIndex = 0;
-                    this.speedBoost = 3;
-                }
-                if (this.frameIndex === 80 && this.totalScore >= 100) {
-                    this.createRandomScoringObject();
-                    this.frameIndex = 0;
-                    this.speedBoost = 2;
-                }
-                if (this.frameIndex === 100) {
-                    this.createRandomScoringObject();
-                    this.frameIndex = 0;
-                }
                 this.player.move();
-                this.scoringObject.forEach((object, index) => {
-                    if (object !== null) {
-                        object.move();
-                        if (this.player.collidesWith(object)) {
-                            this.totalScore += object.getPoints();
-                            this.totalLives += object.getLives();
-                            this.scoringObject.splice(index, 1);
-                        }
-                        else if (object.collidesWithCanvasBottom()) {
-                            this.scoringObject.splice(index, 1);
-                        }
-                    }
-                });
-            }
-            if (this.totalLives <= 0) {
-                this.scoringObject = [];
+                this.level.collision();
+                if (this.level.isComplete()) {
+                    this.advanceToNextLevel();
+                }
             }
             this.draw();
             requestAnimationFrame(this.step);
@@ -65,14 +29,26 @@ class Game {
         this.canvas.width = 650;
         this.canvas.height = window.innerHeight;
         this.player = new Player(this.canvas);
-        this.totalScore = 0;
-        this.totalLives = 5;
-        this.speedBoost = 0;
+        this.advanceToNextLevel();
         this.frameIndex = 0;
         this.paused = true;
         this.keyListener = new KeyListener();
         console.log('start animation');
         requestAnimationFrame(this.step);
+    }
+    advanceToNextLevel() {
+        const levelArray = [
+            new Level(this.canvas, this.player, 90, 400, 0),
+            new Level(this.canvas, this.player, 80, 400, 0.5),
+            new Level(this.canvas, this.player, 75, 600, 1),
+            new Level(this.canvas, this.player, 70, 800, 1.5),
+            new Level(this.canvas, this.player, 65, 1000, 2),
+            new Level(this.canvas, this.player, 60, 1200, 2.5),
+            new Level(this.canvas, this.player, 55, 1400, 3),
+            new Level(this.canvas, this.player, 50, 1600, 3.5)
+        ];
+        this.level = levelArray[this.levelIndex];
+        this.levelIndex++;
     }
     pause() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -88,13 +64,14 @@ class Game {
     draw() {
         const ctx = this.canvas.getContext('2d');
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.writeTextToCanvas(ctx, ` Level: ${this.levelIndex}`, this.canvas.width / 2, 20, 18);
         this.writeTextToCanvas(ctx, "UP arrow = middle | LEFT arrow = left | RIGHT arrow = right", this.canvas.width / 2, 40, 14);
         this.writeTextToCanvas(ctx, `Press ESC to pause`, this.canvas.width / 2 - 250, 20, 16);
-        this.writeTextToCanvas(ctx, `Lives: ${this.totalLives}`, this.canvas.width / 2 + 250, 20, 16);
-        if (this.won === true) {
+        this.writeTextToCanvas(ctx, `Lives: ${this.level.getTotalLives()}`, this.canvas.width / 2 + 250, 20, 16);
+        if (this.level.isComplete() === true) {
             this.writeTextToCanvas(ctx, `You Won!`, this.canvas.width / 2, 200, 40);
         }
-        if (this.totalLives <= 0) {
+        if (this.level.getTotalLives() <= 0) {
             this.writeTextToCanvas(ctx, `You Lost`, this.canvas.width / 2, 200, 40);
         }
         else if (this.paused === true) {
@@ -103,35 +80,10 @@ class Game {
         }
         this.drawScore(ctx);
         this.player.draw(ctx);
-        this.scoringObject.forEach((object) => {
-            if (object !== null) {
-                object.draw(ctx);
-            }
-        });
+        this.level.drawObjects(ctx);
     }
     drawScore(ctx) {
-        this.writeTextToCanvas(ctx, `Score: ${this.totalScore}`, this.canvas.width / 2, 80, 16);
-    }
-    createRandomScoringObject() {
-        const random = this.randomInteger(1, 4);
-        const plusLife = this.randomInteger(1, 40);
-        if (plusLife === 6) {
-            this.scoringObject.push(new GreenCross(this.canvas));
-        }
-        else if (random === 1) {
-            this.scoringObject.push(new GoldTrophy(this.canvas));
-        }
-        else if (random === 2) {
-            this.scoringObject.push(new SilverTrophy(this.canvas));
-        }
-        else if (random === 3) {
-            this.scoringObject.push(new RedCross(this.canvas));
-        }
-        else if (random === 4) {
-            this.scoringObject.push(new LightningBolt(this.canvas));
-        }
-        const last_element = this.scoringObject.length - 1;
-        this.scoringObject[last_element].setSpeed(this.speedBoost);
+        this.writeTextToCanvas(ctx, `Score: ${this.level.getTotalScore()}`, this.canvas.width / 2, 80, 16);
     }
     writeTextToCanvas(ctx, text, xCoordinate, yCoordinate, fontSize = 20, color = "red", alignment = "center") {
         ctx.font = `${fontSize}px sans-serif`;
@@ -141,9 +93,6 @@ class Game {
     }
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
-    }
-    randomInteger(min, max) {
-        return Math.round(Math.random() * (max - min) + min);
     }
 }
 class ScoringObject {
@@ -300,8 +249,106 @@ KeyListener.KEY_X = 88;
 KeyListener.KEY_Y = 89;
 KeyListener.KEY_Z = 90;
 class Level {
-    constructor(canvas) {
+    constructor(canvas, player, baseSpawnRate, maxPoints, speedMultiplier) {
         this.totalScore = 0;
+        this.scoringObject = new Array();
+        this.speedSwitch = true;
+        this.won = false;
+        this.canvas = canvas;
+        this.player = player;
+        this.totalLives = 5;
+        this.speedBoost = 0;
+        this.speedMultiplier = speedMultiplier;
+        this.baseSpawnRate = baseSpawnRate;
+        this.maxPoints = maxPoints;
+    }
+    getTotalLives() {
+        return this.totalLives;
+    }
+    getFrameIndex() {
+        return this.frameIndex;
+    }
+    getTotalScore() {
+        return this.totalScore;
+    }
+    isComplete() {
+        return this.won;
+    }
+    logic(frameIndex) {
+        this.frameIndex = frameIndex;
+        if (this.totalScore >= this.maxPoints) {
+            this.won = true;
+        }
+        if (this.totalScore < 0) {
+            this.totalLives = 0;
+        }
+        const number = this.totalScore / 20;
+        let difficultyVariable = this.baseSpawnRate - number;
+        if (difficultyVariable < 15) {
+            difficultyVariable = 15;
+        }
+        if (this.speedBoost < 5 && this.speedSwitch === true) {
+            this.speedBoost = this.totalScore * 0.015;
+        }
+        else {
+            this.speedSwitch = false;
+            this.speedBoost = 5 - this.speedMultiplier + this.totalScore * 0.005;
+        }
+        if (frameIndex >= difficultyVariable) {
+            console.log(difficultyVariable);
+            this.createRandomScoringObject();
+            this.frameIndex = 0;
+        }
+    }
+    drawObjects(ctx) {
+        this.scoringObject.forEach((object) => {
+            if (object !== null) {
+                object.draw(ctx);
+            }
+        });
+    }
+    collision() {
+        this.scoringObject.forEach((object, index) => {
+            if (object !== null) {
+                object.move();
+                if (this.player.collidesWith(object)) {
+                    this.totalScore += object.getPoints();
+                    this.totalLives += object.getLives();
+                    this.scoringObject.splice(index, 1);
+                }
+                else if (object.collidesWithCanvasBottom()) {
+                    this.scoringObject.splice(index, 1);
+                }
+            }
+        });
+    }
+    createRandomScoringObject() {
+        const random = this.randomInteger(1, 5);
+        const plusLife = this.randomInteger(1, 40);
+        if (plusLife === 6) {
+            this.scoringObject.push(new GreenCross(this.canvas));
+        }
+        else if (random === 1) {
+            this.scoringObject.push(new GoldTrophy(this.canvas));
+        }
+        else if (random === 2) {
+            this.scoringObject.push(new SilverTrophy(this.canvas));
+        }
+        else if (random === 3) {
+            this.scoringObject.push(new RedCross(this.canvas));
+        }
+        else if (random === 4) {
+            this.scoringObject.push(new LightningBolt(this.canvas));
+        }
+        else if (random === 5) {
+            this.scoringObject.push(new BlueLightningBolt(this.canvas));
+        }
+        const last_element = this.scoringObject.length - 1;
+        console.log(this.speedBoost + this.speedMultiplier);
+        this.scoringObject[last_element].setSpeed(this.speedBoost + this.speedMultiplier);
+    }
+    randomInteger(min, max) {
+        return Math.round(Math.random() * (max - min) + min);
     }
 }
 class LightningBolt extends ScoringObject {
@@ -320,7 +367,7 @@ class Player {
         this.middleLane = this.canvas.width / 2;
         this.rightLane = this.canvas.width / 4 * 3;
         this.keyListener = new KeyListener();
-        this.image = this.loadNewImage("./assets/img/players/character_femaleAdventurer_walk0.png");
+        this.image = this.loadNewImage("./assets/img/players/character_pain_walk0.png");
         this.positionX = this.canvas.width / 2;
     }
     move() {
@@ -367,6 +414,15 @@ class SilverTrophy extends ScoringObject {
         this.image = this.loadNewImage("assets/img/objects/silver_trophy.png");
         this.speed = 5;
         this.points = 5;
+        this._lives = 0;
+    }
+}
+class BlueLightningBolt extends ScoringObject {
+    constructor(canvas) {
+        super(canvas);
+        this.image = this.loadNewImage("assets/img/objects/face_on_blue_power_icon.png");
+        this.speed = 7;
+        this.points = -15;
         this._lives = 0;
     }
 }

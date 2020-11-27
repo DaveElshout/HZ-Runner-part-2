@@ -11,3 +11,8 @@ custom background
 win state within levels
 
 class level de game logica/maken van een level
+
+ik wil een gradual loop die bij elke punten erbij sneller word,
+ en punten eraf langzamer (speed = this.points /)
+dan gaat ie steeds sneller tot de win score 
+bij volgend level hoef je alleen maar de begin snelheid aaan te passen
